@@ -164,3 +164,44 @@ CREATE TABLE item_compra (
     CHECK (quantidade > 0),
     CHECK (preco_unitario >= 0)
 );
+
+-- =========================================
+-- INGRESSO 
+-- =========================================
+
+CREATE TABLE ingresso (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+
+    id_item_compra int NOT NULL,
+
+    codigo_unico VARCHAR(20) NOT NULL UNIQUE,
+
+    status varchar(20) NOT NULL DEFAULT 'VALIDO',
+
+    data_criacao datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (id_item_compra)
+        REFERENCES item_compra(id),
+
+    CHECK (
+        status IN (
+            'VALIDO',
+            'UTILIZADO',
+            'CANCELADO'
+        )
+    )
+);
+
+describe ingresso;
+
+select*
+from ingresso;
+
+INSERT INTO ingresso (
+    id_item_compra,
+    codigo_unico
+)
+VALUES (
+    1,
+    'VTY-A81F92K2'
+);

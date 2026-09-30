@@ -146,3 +146,95 @@ BEGIN
 END%%
 
 DELIMITER ;
+
+DELIMITER %%
+
+DROP PROCEDURE IF EXISTS gerar_ingressos%%
+
+CREATE PROCEDURE gerar_ingressos(
+    IN p_id_item_compra INT
+)
+
+BEGIN
+
+    DECLARE v_quantidade INT;
+    DECLARE v_contador INT DEFAULT 1;
+    DECLARE v_item_existe INT;
+    DECLARE v_ingressos_existentes INT;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    SELECT COUNT(*)
+    INTO v_item_existe
+    FROM item_compra
+    WHERE id = p_id_item_compra;
+
+    IF v_item_existe = 0 THEN
+
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'ITEM_COMPRA_INEXISTENTE';
+
+    END IF;
+    
+    
+    START TRANSACTION;
+    
+    select quantidade
+    into v_quantidade
+    from item_compra
+    where id = p_id_item_compra;
+    
+    Select COUNT(*)
+    INTO v_ingressos_existentes
+    FROM ingresso
+    WHERE id_item_compra = p_id_item_compra
+    FOR UPDATE;
+    
+    IF v_ingressos_existentes > 0 then 
+    
+      Signal sqlstate '45000'
+      Set MESSAGE_TEXT = 'INGRESSOS_JA_GERADOS';
+      
+      end if;
+      
+      WHILE v_contador <= v_quantidade DO
+
+INSERT INTO ingresso (
+    id_item_compra,
+    codigo_unico
+)
+VALUES (
+    p_id_item_compra,
+    CONCAT(
+        'VTY-',
+        UPPER(
+            SUBSTRING(
+                REPLACE(UUID(), '-', ''),
+                1,
+                16
+            )
+        )
+    )
+);
+
+    SET v_contador = v_contador + 1;
+
+END WHILE;
+
+COMMIT;
+
+SELECT
+    'INGRESSOS_GERADOS' AS situacao,
+    p_id_item_compra AS id_item_compra,
+    v_quantidade AS quantidade_gerada;
+    
+    END%%
+
+DELIMITER ;
+
+SHOW PROCEDURE STATUS
+WHERE Db = 'ventry_v2';

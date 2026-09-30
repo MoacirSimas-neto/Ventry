@@ -139,3 +139,128 @@ COMMIT;
 
 -- Se não houver mais estoque suficiente,
 -- ROW_COUNT() retorna 0.
+
+-- 1. código duplicado
+INSERT INTO ingresso (
+    id_item_compra,
+    codigo_unico
+)
+VALUES (
+    1,
+    'VTY-A81F92K2'
+);
+
+
+-- 2. status inválido
+INSERT INTO ingresso (
+    id_item_compra,
+    codigo_unico,
+    status
+)
+VALUES (
+    1,
+    'VTY-TESTE002',
+    'PENDENTE'
+);
+
+-- 3. item_compra inexistente
+INSERT INTO ingresso (
+    id_item_compra,
+    codigo_unico
+)
+VALUES (
+    999,
+    'VTY-TESTE003'
+);
+
+
+
+
+USE ventry_v2;
+
+
+-- =========================================
+-- FASE 4A
+-- TESTE DE GERAÇÃO DE INGRESSOS
+-- =========================================
+
+
+-- =========================================
+-- TESTE 6
+-- CRIAR COMPRA COM 3 INGRESSOS
+-- =========================================
+
+CALL compra_com_estoque(1, 1, 3);
+
+-- Esperado:
+-- COMPRA_REALIZADA
+
+
+-- Pega automaticamente o item_compra
+-- criado na compra acima
+
+SET @id_item_compra_teste = (
+    SELECT id
+    FROM item_compra
+    ORDER BY id DESC
+    LIMIT 1
+);
+
+SELECT @id_item_compra_teste;
+
+
+-- =========================================
+-- TESTE 7
+-- GERAR INGRESSOS
+-- =========================================
+
+CALL gerar_ingressos(@id_item_compra_teste);
+
+-- Esperado:
+-- INGRESSOS_GERADOS
+-- quantidade_gerada = 3
+
+
+-- Confere os ingressos criados
+
+SELECT *
+FROM ingresso
+WHERE id_item_compra = @id_item_compra_teste;
+
+-- Esperado:
+-- 3 registros
+-- códigos diferentes
+-- status = VALIDO
+-- data_criacao preenchida
+
+
+-- Confere a quantidade
+
+SELECT COUNT(*) AS total_ingressos
+FROM ingresso
+WHERE id_item_compra = @id_item_compra_teste;
+
+-- Esperado:
+-- total_ingressos = 3
+
+
+-- =========================================
+-- TESTE 8
+-- IMPEDIR GERAÇÃO DUPLICADA
+-- =========================================
+
+CALL gerar_ingressos(@id_item_compra_teste);
+
+-- Esperado:
+-- INGRESSOS_JA_GERADOS
+
+
+-- =========================================
+-- TESTE 9
+-- ITEM_COMPRA INEXISTENTE
+-- =========================================
+
+CALL gerar_ingressos(999);
+
+-- Esperado:
+-- ITEM_COMPRA_INEXISTENTE
